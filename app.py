@@ -10,7 +10,7 @@ app = Flask(__name__)
 CORS(app, resources={
     r"/api/*": {"origins": "https://greencard-fronted.vercel.app"},
     r"/uploads/*": {"origins": "https://greencard-fronted.vercel.app"}
-})
+}, supports_credentials=True)
 
 # === Configuration ===
 basedir = os.path.abspath(os.path.dirname(__file__))
@@ -39,6 +39,15 @@ def index():
 @app.route('/uploads/<filename>')
 def uploaded_file(filename):
     return send_from_directory(UPLOAD_FOLDER, filename)
+
+# === En-têtes CORS forcés (utile pour Render) ===
+@app.after_request
+def add_cors_headers(response):
+    response.headers['Access-Control-Allow-Origin'] = 'https://greencard-fronted.vercel.app'
+    response.headers['Access-Control-Allow-Credentials'] = 'true'
+    response.headers['Access-Control-Allow-Headers'] = 'Content-Type,Authorization'
+    response.headers['Access-Control-Allow-Methods'] = 'GET,POST,PUT,DELETE,OPTIONS'
+    return response
 
 # === Import des routes ===
 from routes.auth import auth_bp
