@@ -5,7 +5,12 @@ import os
 
 # === Création de l'application ===
 app = Flask(__name__)
-CORS(app)
+
+# === Autoriser les appels du frontend Vercel ===
+CORS(app, resources={
+    r"/api/*": {"origins": "https://greencard-fronted.vercel.app"},
+    r"/uploads/*": {"origins": "https://greencard-fronted.vercel.app"}
+})
 
 # === Configuration ===
 basedir = os.path.abspath(os.path.dirname(__file__))
@@ -13,7 +18,7 @@ db_path = os.path.join(basedir, 'db', 'greencart.db')
 
 app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{db_path}'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['JWT_SECRET_KEY'] = os.environ.get('JWT_SECRET_KEY', 'dev-secret-key')  # Ajout pour JWT
+app.config['JWT_SECRET_KEY'] = os.environ.get('JWT_SECRET_KEY', 'dev-secret-key')
 
 UPLOAD_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'uploads')
 
@@ -45,6 +50,7 @@ from routes.newsletter import newsletter_bp
 from routes.cart import cart_bp
 from routes.blog import blog_bp
 
+# === Enregistrement des blueprints ===
 app.register_blueprint(auth_bp, url_prefix='/api/auth')
 app.register_blueprint(products_bp, url_prefix='/api/products')
 app.register_blueprint(orders_bp, url_prefix='/api/orders')
@@ -54,5 +60,6 @@ app.register_blueprint(newsletter_bp, url_prefix='/api/newsletter')
 app.register_blueprint(cart_bp, url_prefix='/api/cart')
 app.register_blueprint(blog_bp, url_prefix='/api/blog')
 
+# === Lancement local ===
 if __name__ == '__main__':
     app.run(debug=True, port=5000)
