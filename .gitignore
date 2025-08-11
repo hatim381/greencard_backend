@@ -1,0 +1,4 @@
+random_forest_model_green_cart_big.pkl
+*.csv
+__pycache__/
+
