@@ -19,3 +19,5 @@ joblib
 catboost
 dash
 dash-bootstrap-components
+gunicorn
+
