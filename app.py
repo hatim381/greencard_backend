@@ -7,10 +7,10 @@ from flask_jwt_extended import JWTManager
 # === Création de l'application ===
 app = Flask(__name__)
 # === CORS pour autoriser le front Vercel ===
-ALLOWED_ORIGINS = os.environ.get(
-    "ALLOWED_ORIGINS",
-    "https://greencard-fronted.vercel.app,http://localhost:3000"
-).split(",")
+ALLOWED_ORIGINS = [
+    "https://greencard-fronted.vercel.app",
+    "http://localhost:3000"  # gardé pour le développement local
+]
 
 CORS(app, resources={
     r"/api/*": {"origins": ALLOWED_ORIGINS},
