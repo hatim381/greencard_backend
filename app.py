@@ -9,6 +9,7 @@ app = Flask(__name__)
 # === CORS pour autoriser le front Vercel ===
 ALLOWED_ORIGINS = [
     "https://greencard-fronted.vercel.app",
+    "https://greencard-frontend.vercel.app",
     "http://localhost:3000"  # gardé pour le développement local
 ]
 
