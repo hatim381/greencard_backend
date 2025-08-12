@@ -13,7 +13,14 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///db/greencart.db'
 db = SQLAlchemy(app)
 
 # --- Dash app ---
-dash_app = dash.Dash(__name__, server=app, url_base_pathname='/dashboard/', external_stylesheets=[dbc.themes.BOOTSTRAP])
+# Ajout de meta_tags pour assurer le responsive sur tous les appareils
+dash_app = dash.Dash(
+    __name__,
+    server=app,
+    url_base_pathname='/dashboard/',
+    external_stylesheets=[dbc.themes.BOOTSTRAP],
+    meta_tags=[{'name': 'viewport', 'content': 'width=device-width, initial-scale=1'}]
+)
 
 # --- Protection admin ---
 @app.before_request
@@ -42,11 +49,12 @@ dash_app.layout = dbc.Container([
                 {'x': df_csv['mois'], 'y': df_csv['is_good_sale'], 'type': 'bar', 'name': 'Bonnes ventes'}
             ],
             'layout': {'title': 'Bonnes ventes par mois (CSV)'}
-        }
+        },
+        style={'width': '100%'}
     ),
     html.H3('Données SQLite : Nombre de commandes'),
     html.Div(f"Nombre de commandes : {len(df_sql)}")
-])
+], fluid=True)
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000)
