@@ -6,15 +6,32 @@ from flask_jwt_extended import JWTManager
 
 # === Création de l'application ===
 app = Flask(__name__)
-CORS(app)
+# === CORS pour autoriser le front Vercel ===
+ALLOWED_ORIGINS = os.environ.get(
+    "ALLOWED_ORIGINS",
+    "https://greencard-fronted.vercel.app,http://localhost:3000"
+).split(",")
 
-# === Configuration ===
-basedir = os.path.abspath(os.path.dirname(__file__))
-db_path = os.path.join(basedir, 'db', 'greencart.db')
+CORS(app, resources={
+    r"/api/*": {"origins": ALLOWED_ORIGINS},
+    r"/uploads/*": {"origins": ALLOWED_ORIGINS}
+})
 
-app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{db_path}'
 
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+# === Configuration BDD ===
+database_url = os.environ.get("DATABASE_URL")
+if database_url and database_url.startswith("postgres://"):
+    # Correction du schéma pour SQLAlchemy
+    database_url = database_url.replace("postgres://", "postgresql://", 1)
+
+if not database_url:
+    # fallback local (dev) si DATABASE_URL n'est pas défini
+    basedir = os.path.abspath(os.path.dirname(__file__))
+    database_url = f"sqlite:///{os.path.join(basedir, 'db', 'greencart.db')}"
+
+app.config["SQLALCHEMY_DATABASE_URI"] = database_url
+app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+
 app.config['JWT_SECRET_KEY'] = os.environ.get('JWT_SECRET_KEY', 'dev-secret-key')  # Ajout pour JWT
 # Correction pour JWT: ajout du token location et du header name
 app.config['JWT_TOKEN_LOCATION'] = ['headers']

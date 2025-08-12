@@ -29,3 +29,9 @@ git commit -m "Message" pour décrire la modification réalisée.
 Attention: Mettre le message entre guillements
 
 git push pour publier les modifications
+
+
+
+git reset --hard HEAD~2  (Remonter de comit en ne prenant pas en compte les modifiaction)
+
+git push -f
