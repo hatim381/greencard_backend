@@ -20,13 +20,13 @@ const upload = multer({ storage: storage });
 // @desc    Create a new product
 // @access  Public
 router.post('/', upload.single('image'), async (req, res) => {
-  const imageUrl = req.file ? `/uploads/${req.file.filename}` : null;
+  const image_url = req.file ? `/uploads/${req.file.filename}` : null;
 
   try {
     const product = new Product({
       name: req.body.name,
       price: req.body.price,
-      imageUrl: imageUrl,
+      image_url: image_url,
       // ...existing code...
     });
 

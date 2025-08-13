@@ -16,6 +16,8 @@ def build_image_url(image_path):
     if not image_path:
         return None
     # urljoin handles absolute URLs gracefully and joins relative ones with the host URL
+    if image_path.startswith('http'):
+        return image_path
     return urljoin(request.host_url, image_path.lstrip('/'))
 
 def allowed_file(filename):
