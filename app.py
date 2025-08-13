@@ -6,6 +6,8 @@ from flask_jwt_extended import JWTManager
 
 # === Création de l'application ===
 app = Flask(__name__)
+# Permet de gérer les routes avec et sans slash final
+app.url_map.strict_slashes = False
 # === CORS pour autoriser le front Vercel ===
 ALLOWED_ORIGINS = os.environ.get(
     "ALLOWED_ORIGINS",
