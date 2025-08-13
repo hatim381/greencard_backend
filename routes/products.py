@@ -16,7 +16,7 @@ def allowed_file(filename):
 @products_bp.route('/', methods=['GET'])
 def get_products():
     products = Product.query.all()
-    return jsonify([{
+    serialized_products = [{
         'id': p.id,
         'name': p.name,
         'description': p.description,
@@ -30,7 +30,8 @@ def get_products():
         'producer': p.producer.name,
         'producer_id': p.producer_id,
         'image_url': p.image_url
-    } for p in products]), 200
+    } for p in products]
+    return jsonify({'products': serialized_products}), 200
 
 # Ajouter un produit
 @products_bp.route('/', methods=['POST'])
