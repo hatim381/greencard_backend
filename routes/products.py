@@ -1,4 +1,5 @@
 from flask import Blueprint, request, jsonify, current_app
+from urllib.parse import urljoin
 from models import db, Product, User
 from datetime import datetime
 import os
@@ -8,6 +9,14 @@ products_bp = Blueprint('products', __name__)
 
 UPLOAD_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'uploads')
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
+
+
+def build_image_url(image_path):
+    """Return an absolute URL for a stored image."""
+    if not image_path:
+        return None
+    # urljoin handles absolute URLs gracefully and joins relative ones with the host URL
+    return urljoin(request.host_url, image_path.lstrip('/'))
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
@@ -29,7 +38,7 @@ def get_products():
         'distance_km': p.distance_km,
         'producer': p.producer.name,
         'producer_id': p.producer_id,
-        'image_url': p.image_url
+        'image_url': build_image_url(p.image_url)
     } for p in products]), 200
 
 # Ajouter un produit
