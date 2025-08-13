@@ -2,6 +2,8 @@ flask==3.1.1
 flask-cors==6.0.0
 flask-sqlalchemy==3.1.1
 flask-jwt-extended
+python-dotenv
+cryptography
 blinker==1.9.0
 click==8.2.1
 greenlet==3.2.3

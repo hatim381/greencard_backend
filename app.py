@@ -3,14 +3,18 @@ from flask_cors import CORS
 from models import db
 import os
 from flask_jwt_extended import JWTManager
+from dotenv import load_dotenv
+import logging
+
+# === Chargement des variables d'environnement ===
+load_dotenv()
+logging.basicConfig(level=logging.INFO)
 
 # === Création de l'application ===
 app = Flask(__name__)
-# === CORS pour autoriser le front Vercel ===
+# === CORS pour autoriser uniquement le front Vercel ===
 ALLOWED_ORIGINS = [
-    "https://greencard-fronted.vercel.app",
-    "https://greencard-frontend.vercel.app",
-    "http://localhost:3000"  # gardé pour le développement local
+    "https://greencard-frontend.vercel.app"
 ]
 
 CORS(app, resources={
@@ -33,10 +37,14 @@ if not database_url:
 app.config["SQLALCHEMY_DATABASE_URI"] = database_url
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
-app.config['JWT_SECRET_KEY'] = os.environ.get('JWT_SECRET_KEY', 'dev-secret-key')  # Ajout pour JWT
-# Correction pour JWT: ajout du token location et du header name
-app.config['JWT_TOKEN_LOCATION'] = ['headers']
-app.config['JWT_HEADER_NAME'] = 'Authorization'
+jwt_secret = os.environ.get('JWT_SECRET_KEY')
+if not jwt_secret:
+    raise RuntimeError('JWT_SECRET_KEY not set')
+app.config['JWT_SECRET_KEY'] = jwt_secret
+# Utilisation d'un cookie sécurisé pour le token
+app.config['JWT_TOKEN_LOCATION'] = ['cookies']
+app.config['JWT_COOKIE_CSRF_PROTECT'] = True
+app.config['JWT_COOKIE_SECURE'] = True
 
 UPLOAD_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'uploads')
 
