@@ -1,33 +1,24 @@
-from flask import Blueprint, request, jsonify, current_app
-from urllib.parse import urljoin
+from flask import Blueprint, request, jsonify
 from models import db, Product, User
 from datetime import datetime
 import os
+import uuid
 from werkzeug.utils import secure_filename
 
 products_bp = Blueprint('products', __name__)
 
-UPLOAD_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'uploads')
-ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
+# Dossier d'upload : <backend_root>/uploads
+BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+UPLOAD_FOLDER = os.path.join(BASE_DIR, 'uploads')
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp'}
 
-def build_image_url(image_path):
-    """Return an absolute URL for a stored image."""
-    if not image_path:
-        return None
-    # urljoin handles absolute URLs gracefully and joins relative ones with the host URL
-    if image_path.startswith('http'):
-        return image_path
-    return urljoin(request.host_url, image_path.lstrip('/'))
-
-def allowed_file(filename):
+def allowed_file(filename: str) -> bool:
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-# Obtenir tous les produits
-@products_bp.route('/', methods=['GET'])
-def get_products():
-    products = Product.query.all()
-    return jsonify([{
+def serialize_product(p: Product) -> dict:
+    return {
         'id': p.id,
         'name': p.name,
         'description': p.description,
@@ -38,86 +29,152 @@ def get_products():
         'dlc': p.dlc.isoformat() if p.dlc else None,
         'co2_reduction': p.co2_reduction,
         'distance_km': p.distance_km,
-        'producer': p.producer.name,
+        'producer': getattr(p.producer, 'name', None),
         'producer_id': p.producer_id,
-        'image_url': build_image_url(p.image_url)
-    } for p in products]), 200
+        'image_url': p.image_url,
+        'created_at': p.created_at.isoformat() if p.created_at else None,
+    }
 
-# Ajouter un produit
+# ===========================
+# GET / - Liste des produits
+# ===========================
+@products_bp.route('/', methods=['GET'])
+def get_products():
+    products = Product.query.all()
+    return jsonify([serialize_product(p) for p in products]), 200
+
+# ===========================
+# POST / - Ajouter un produit
+# ===========================
 @products_bp.route('/', methods=['POST'])
 def add_product():
-    if request.content_type and request.content_type.startswith('multipart/form-data'):
-        data = request.form
-        file = request.files.get('image')
-    else:
-        data = request.get_json()
-        file = None
+    # Accepte JSON ou multipart/form-data
+    is_multipart = bool(request.content_type and request.content_type.startswith('multipart/form-data'))
+    data = request.form if is_multipart else (request.get_json(silent=True) or {})
+    file = request.files.get('image') if is_multipart else None
 
+    # Champs obligatoires
     required = ['name', 'price', 'quantity', 'producer_id', 'dlc']
     for field in required:
         if not data.get(field):
             return jsonify({'error': f'Champ obligatoire manquant: {field}'}), 400
-    try:
-        try:
-            dlc = datetime.strptime(data.get('dlc'), '%Y-%m-%d')
-        except Exception:
-            return jsonify({'error': 'Format de date DLC invalide. Utilisez AAAA-MM-JJ.'}), 400
 
+    # Conversions et validations
+    try:
+        name = data.get('name').strip()
+        price = float(data.get('price'))
+        quantity = int(data.get('quantity'))
+        producer_id = int(data.get('producer_id'))
+        dlc_str = data.get('dlc')
+        try:
+            dlc = datetime.strptime(dlc_str, '%Y-%m-%d').date()
+        except Exception:
+            return jsonify({'error': "Format de date DLC invalide. Utilisez AAAA-MM-JJ."}), 400
+
+        # Optionnels
+        description = data.get('description')
+        category = data.get('category')
+        status = data.get('status')
+        co2_reduction = int(data['co2_reduction']) if data.get('co2_reduction') not in (None, '', 'null') else None
+        distance_km = int(data['distance_km']) if data.get('distance_km') not in (None, '', 'null') else None
+
+        # Vérifier que le producer existe (facultatif mais sain)
+        if not User.query.get(producer_id):
+            return jsonify({'error': "Producer introuvable."}), 400
+
+        # Image
         image_url = None
         if file and allowed_file(file.filename):
-            if not os.path.exists(UPLOAD_FOLDER):
-                os.makedirs(UPLOAD_FOLDER)
-            filename = secure_filename(file.filename)
-            filepath = os.path.join(UPLOAD_FOLDER, filename)
+            ext = file.filename.rsplit('.', 1)[1].lower()
+            unique_name = f"{uuid.uuid4().hex}_{secure_filename(file.filename)}"
+            filepath = os.path.join(UPLOAD_FOLDER, unique_name)
             file.save(filepath)
-            image_url = f"/uploads/{filename}"
+            image_url = f"/uploads/{unique_name}"
         elif data.get('image_url'):
+            # Permet d'utiliser une URL distante si fournie
             image_url = data.get('image_url')
 
         product = Product(
-            name=data.get('name'),
-            description=data.get('description'),
-            price=data.get('price'),
-            quantity=data.get('quantity'),
-            category=data.get('category'),
-            status=data.get('status'),
+            name=name,
+            description=description,
+            price=price,
+            quantity=quantity,
+            category=category,
+            status=status,
             dlc=dlc,
-            co2_reduction=data.get('co2_reduction'),
-            distance_km=data.get('distance_km'),
-            producer_id=data.get('producer_id'),
+            co2_reduction=co2_reduction,
+            distance_km=distance_km,
+            producer_id=producer_id,
             image_url=image_url
         )
         db.session.add(product)
         db.session.commit()
-        return jsonify({'message': 'Produit ajouté avec succès'}), 201
+        return jsonify({'message': 'Produit ajouté avec succès', 'product': serialize_product(product)}), 201
+
+    except ValueError as ve:
+        return jsonify({'error': f'Valeur invalide: {str(ve)}'}), 400
     except Exception as e:
         return jsonify({'error': str(e)}), 400
 
+# ===========================
+# PUT /<id> - Modifier produit
+# ===========================
 @products_bp.route('/<int:product_id>', methods=['PUT'])
 def update_product(product_id):
-    if request.content_type and request.content_type.startswith('multipart/form-data'):
-        data = request.form
-        file = request.files.get('image')
-    else:
-        data = request.get_json()
-        file = None
+    is_multipart = bool(request.content_type and request.content_type.startswith('multipart/form-data'))
+    data = request.form if is_multipart else (request.get_json(silent=True) or {})
+    file = request.files.get('image') if is_multipart else None
 
     product = Product.query.get_or_404(product_id)
-    product.name = data.get('name', product.name)
-    product.price = data.get('price', product.price)
-    product.quantity = data.get('quantity', product.quantity)
-    product.category = data.get('category', product.category)
-    product.dlc = datetime.strptime(data.get('dlc'), '%Y-%m-%d') if data.get('dlc') else product.dlc
 
-    if file and allowed_file(file.filename):
-        if not os.path.exists(UPLOAD_FOLDER):
-            os.makedirs(UPLOAD_FOLDER)
-        filename = secure_filename(file.filename)
-        filepath = os.path.join(UPLOAD_FOLDER, filename)
-        file.save(filepath)
-        product.image_url = f"/uploads/{filename}"
-    elif data.get('image_url'):
-        product.image_url = data.get('image_url')
+    try:
+        # Champs texte
+        if data.get('name') is not None:
+            product.name = data.get('name').strip()
+        if data.get('description') is not None:
+            product.description = data.get('description')
+        if data.get('category') is not None:
+            product.category = data.get('category')
+        if data.get('status') is not None:
+            product.status = data.get('status')
 
-    db.session.commit()
-    return jsonify({'message': 'Produit modifié avec succès'}), 200
+        # Numériques
+        if data.get('price') not in (None, ''):
+            product.price = float(data.get('price'))
+        if data.get('quantity') not in (None, ''):
+            product.quantity = int(data.get('quantity'))
+        if data.get('producer_id') not in (None, ''):
+            new_producer_id = int(data.get('producer_id'))
+            if not User.query.get(new_producer_id):
+                return jsonify({'error': "Producer introuvable."}), 400
+            product.producer_id = new_producer_id
+        if data.get('co2_reduction') not in (None, '', 'null'):
+            product.co2_reduction = int(data.get('co2_reduction'))
+        if data.get('distance_km') not in (None, '', 'null'):
+            product.distance_km = int(data.get('distance_km'))
+
+        # Date
+        if data.get('dlc'):
+            try:
+                product.dlc = datetime.strptime(data.get('dlc'), '%Y-%m-%d').date()
+            except Exception:
+                return jsonify({'error': "Format de date DLC invalide. Utilisez AAAA-MM-JJ."}), 400
+
+        # Image
+        if file and allowed_file(file.filename):
+            ext = file.filename.rsplit('.', 1)[1].lower()
+            unique_name = f"{uuid.uuid4().hex}_{secure_filename(file.filename)}"
+            filepath = os.path.join(UPLOAD_FOLDER, unique_name)
+            file.save(filepath)
+            product.image_url = f"/uploads/{unique_name}"
+        elif data.get('image_url'):
+            # Permet de remplacer par une URL externe si fournie
+            product.image_url = data.get('image_url')
+
+        db.session.commit()
+        return jsonify({'message': 'Produit modifié avec succès', 'product': serialize_product(product)}), 200
+
+    except ValueError as ve:
+        return jsonify({'error': f'Valeur invalide: {str(ve)}'}), 400
+    except Exception as e:
+        return jsonify({'error': str(e)}), 400

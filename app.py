@@ -4,6 +4,11 @@ from models import db
 import os
 from flask_jwt_extended import JWTManager
 
+# === Chemins ===
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+UPLOAD_DIR = os.path.join(BASE_DIR, "uploads")
+os.makedirs(UPLOAD_DIR, exist_ok=True)
+
 # === Création de l'application ===
 app = Flask(__name__)
 
@@ -51,9 +56,6 @@ app.config['JWT_TOKEN_LOCATION'] = ['headers']
 app.config['JWT_HEADER_NAME'] = 'Authorization'
 jwt = JWTManager(app)
 
-# === Dossier uploads ===
-UPLOAD_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'uploads')
-
 # === Initialisation DB ===
 db.init_app(app)
 with app.app_context():
@@ -75,10 +77,10 @@ def health_api():
 def index():
     return {'message': 'Bienvenue sur l’API GreenCart 🎉'}
 
-# === Fichiers uploads ===
-@app.get("/uploads/<path:filename>")
-def uploaded_file(filename):
-    return send_from_directory(UPLOAD_FOLDER, filename)
+# === Fichiers uploads (une seule route, pas de doublon) ===
+@app.route('/uploads/<path:filename>')
+def serve_uploads(filename):
+    return send_from_directory(UPLOAD_DIR, filename)
 
 # === Import & enregistrement des blueprints ===
 from routes.auth import auth_bp
