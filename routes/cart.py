@@ -20,6 +20,7 @@ def get_cart():
     ])
 
 @cart_bp.route('/', methods=['POST'])
+@cart_bp.route('', methods=['POST'])  # Accepter sans slash
 @jwt_required()
 def add_to_cart():
     user_id = get_jwt_identity()
