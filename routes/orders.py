@@ -7,6 +7,7 @@ orders_bp = Blueprint('orders', __name__)
 
 # Créer une commande
 @orders_bp.route('/', methods=['POST'])
+@orders_bp.route('', methods=['POST'])  # Accepter sans slash
 def create_order():
     print("DEBUG - Données reçues :", request.get_json())  # Ajoute cette ligne
     try:
