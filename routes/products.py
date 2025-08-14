@@ -39,6 +39,7 @@ def serialize_product(p: Product) -> dict:
 # GET / - Liste des produits
 # ===========================
 @products_bp.route('/', methods=['GET'])
+@products_bp.route('', methods=['GET'])  # Accepter sans slash
 def get_products():
     products = Product.query.all()
     return jsonify([serialize_product(p) for p in products]), 200
