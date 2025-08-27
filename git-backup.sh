@@ -24,7 +24,7 @@ git config --global user.email "backup@greencart.app"
 # Configurer le remote GitHub si pas déjà fait
 if ! git remote get-url origin >/dev/null 2>&1; then
     echo "🔗 Configuration du remote GitHub..."
-    git remote add origin https://${GITHUB_TOKEN}@github.com/YubaC/greencart-db-backup.git || true
+    git remote add origin https://${GITHUB_TOKEN}@github.com/hatim381/greencard_backend.git || true
 fi
 
 # Sauvegarder la base de données principale
