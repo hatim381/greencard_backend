@@ -2,3 +2,6 @@ random_forest_model_green_cart_big.pkl
 *.csv
 __pycache__/
 venv
+
+# Autoriser la sauvegarde de la base de données principale
+!db/greencart.db

@@ -14,7 +14,6 @@ export RENDER=true
 
 # Chemins
 DB_PATH="/opt/render/project/src/db/greencart.db"
-BACKUP_DB="/opt/render/project/src/db/greencart_backup.db"
 
 # Créer le dossier DB
 mkdir -p /opt/render/project/src/db
@@ -23,15 +22,9 @@ mkdir -p /opt/render/project/src/db
 if [ ! -f "$DB_PATH" ]; then
     echo "📥 Tentative de restauration depuis GitHub..."
     
-    # Restaurer les sauvegardes depuis GitHub
+    # Restaurer les sauvegardes depuis GitHub (avec la nouvelle version)
     chmod +x /opt/render/project/src/git-restore.sh
     /opt/render/project/src/git-restore.sh || echo "⚠️ Pas de sauvegarde GitHub trouvée"
-    
-    # Si on a une sauvegarde, la copier
-    if [ -f "$BACKUP_DB" ]; then
-        echo "📂 Restauration de la sauvegarde..."
-        cp "$BACKUP_DB" "$DB_PATH"
-    fi
 fi
 
 # Créer la DB si elle n'existe toujours pas
@@ -45,9 +38,9 @@ with app.app_context():
 "
 fi
 
-# Sauvegarde immédiate
+# Sauvegarde immédiate (pas besoin de copie)
 echo "💾 Sauvegarde initiale..."
-cp "$DB_PATH" "$BACKUP_DB" 2>/dev/null || true
+# La DB sera sauvegardée directement par git-backup.sh
 
 # Démarrer les sauvegardes Git périodiques (toutes les 5 minutes)
 echo "⏰ Démarrage des sauvegardes Git..."
@@ -55,7 +48,6 @@ chmod +x /opt/render/project/src/git-backup.sh
 (while true; do
     sleep 300  # 5 minutes
     echo "🔄 Sauvegarde automatique $(date)"
-    cp "$DB_PATH" "$BACKUP_DB" 2>/dev/null || true
     /opt/render/project/src/git-backup.sh || echo "⚠️ Erreur sauvegarde Git"
 done) &
 BACKUP_PID=$!
@@ -64,7 +56,6 @@ BACKUP_PID=$!
 cleanup() {
     echo "🛑 Arrêt des services..."
     echo "💾 Sauvegarde finale..."
-    cp "$DB_PATH" "$BACKUP_DB" 2>/dev/null || true
     /opt/render/project/src/git-backup.sh || echo "⚠️ Erreur sauvegarde finale"
     kill $BACKUP_PID 2>/dev/null || true
     wait $BACKUP_PID 2>/dev/null || true

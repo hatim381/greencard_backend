@@ -3,7 +3,7 @@
 # Sauvegarde automatique vers GitHub
 # set -e # Désactivé pour éviter les plantages
 
-BACKUP_DIR="/opt/render/project/src/litestream-backups"
+DB_PATH="/opt/render/project/src/db/greencart.db"
 GITHUB_TOKEN="${GITHUB_TOKEN}"
 
 echo "🔄 Sauvegarde Git - $(date)"
@@ -18,13 +18,16 @@ fi
 cd /opt/render/project/src
 
 # Configurer Git si pas déjà fait
-git config --global user.name "Litestream Auto-Backup"
+git config --global user.name "GreenCart Auto-Backup"
 git config --global user.email "backup@greencart.app"
 
-# Ajouter les sauvegardes au repo existant
-if [ -d "$BACKUP_DIR" ] && [ "$(ls -A $BACKUP_DIR 2>/dev/null)" ]; then
-    echo "📁 Ajout des sauvegardes..."
-    git add litestream-backups/ || true
+# Sauvegarder la base de données principale
+if [ -f "$DB_PATH" ]; then
+    echo "📋 Sauvegarde de la base de données principale..."
+    
+    # Ajouter la base de données principale
+    echo "📁 Ajout de greencart.db..."
+    git add db/greencart.db || true
     
     # Vérifier s'il y a des changements
     if ! git diff --staged --quiet 2>/dev/null; then
@@ -37,5 +40,5 @@ if [ -d "$BACKUP_DIR" ] && [ "$(ls -A $BACKUP_DIR 2>/dev/null)" ]; then
         echo "✅ Aucun changement à sauvegarder"
     fi
 else
-    echo "📂 Dossier de sauvegarde vide"
+    echo "❌ Base de données non trouvée : $DB_PATH"
 fi
