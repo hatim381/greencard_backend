@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Restauration depuis GitHub
-set -e
+# set -e # Désactivé pour éviter les plantages
 
 BACKUP_DIR="/opt/render/project/src/litestream-backups"
 GITHUB_TOKEN="${GITHUB_TOKEN}"
@@ -10,8 +10,9 @@ echo "📥 Restauration Git - $(date)"
 
 # Vérifier que le token existe
 if [ -z "$GITHUB_TOKEN" ]; then
-    echo "❌ GITHUB_TOKEN non défini"
-    exit 1
+    echo "⚠️ GITHUB_TOKEN non défini, saut de la restauration"
+    mkdir -p "$BACKUP_DIR"
+    exit 0
 fi
 
 # Aller dans le dossier du projet
