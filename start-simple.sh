@@ -11,6 +11,10 @@ mkdir -p /opt/render/project/src/db
 # Aller dans le bon répertoire
 cd /opt/render/project/src
 
+# ACTIVER L'ENVIRONNEMENT VIRTUEL  
+echo "🔧 Activation de l'environnement virtuel..."
+source .venv/bin/activate
+
 # Vérifier que Flask est installé
 echo "� Vérification des modules Python..."
 python3 -c "import flask; print('✅ Flask trouvé:', flask.__version__)" || echo "❌ Flask non trouvé"
