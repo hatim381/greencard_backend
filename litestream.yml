@@ -1,0 +1,5 @@
+dbs:
+  - path: /opt/render/project/src/db/greencart.db
+    replicas:
+      - type: file
+        path: /opt/render/project/src/litestream-backups
