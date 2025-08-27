@@ -43,9 +43,14 @@ if database_url and database_url.startswith("postgres://"):
     database_url = database_url.replace("postgres://", "postgresql://", 1)
 
 if not database_url:
-    # Fallback local (dev) si DATABASE_URL n'est pas défini
-    basedir = os.path.abspath(os.path.dirname(__file__))
-    database_url = f"sqlite:///{os.path.join(basedir, 'db', 'greencart.db')}"
+    # Configuration pour dev local vs Render
+    if os.environ.get('RENDER'):
+        # Production sur Render avec Litestream
+        database_url = "sqlite:////opt/render/project/src/db/greencart.db"
+    else:
+        # Développement local
+        basedir = os.path.abspath(os.path.dirname(__file__))
+        database_url = f"sqlite:///{os.path.join(basedir, 'db', 'greencart.db')}"
 
 app.config["SQLALCHEMY_DATABASE_URI"] = database_url
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
