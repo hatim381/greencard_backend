@@ -34,26 +34,43 @@ fi
 echo "🔀 Basculement sur main..."
 git checkout main 2>/dev/null || git checkout -b main || true
 
-# Pull des derniers changements avant de pousser
+# Vérifier s'il y a des changements dans la DB avant de pull
+if [ -f "$DB_PATH" ]; then
+    echo "📋 Vérification des changements DB..."
+    git add db/greencart.db || true
+    
+    # S'il y a des changements, les stash temporairement
+    if ! git diff --staged --quiet 2>/dev/null; then
+        echo "💾 Mise de côté temporaire des changements DB..."
+        git stash push -m "Temp backup before pull $(date -u +%Y-%m-%d_%H:%M:%S_UTC)" || true
+    fi
+fi
+
+# Pull des derniers changements
 echo "📥 Pull des derniers changements..."
-git pull origin main --rebase || echo "⚠️ Premier push, normal"
+git pull origin main || echo "⚠️ Premier pull, normal"
 
 # Sauvegarder la base de données principale
 if [ -f "$DB_PATH" ]; then
     echo "📋 Sauvegarde de la base de données principale..."
     
-    # Ajouter la base de données principale
-    echo "📁 Ajout de greencart.db..."
-    git add db/greencart.db || true
+    # Récupérer les changements stashés s'il y en a
+    if git stash list | grep -q "Temp backup before pull"; then
+        echo "🔄 Récupération des changements DB..."
+        git stash pop || true
+    else
+        # Sinon, ajouter la DB normalement
+        echo "📁 Ajout de greencart.db..."
+        git add db/greencart.db || true
+    fi
     
-    # Vérifier s'il y a des changements
+    # Vérifier s'il y a des changements à commit
     if ! git diff --staged --quiet 2>/dev/null; then
         echo "💾 Commit des sauvegardes..."
         git commit -m "Auto backup DB $(date -u +%Y-%m-%d_%H:%M:%S_UTC)" || true
         
         echo "🚀 Push vers GitHub..."
-        git push origin main --force-with-lease || echo "⚠️ Erreur push - retry simple..."
-        git push origin main || echo "⚠️ Erreur push finale"
+        git push origin main || echo "⚠️ Erreur push"
     else
         echo "✅ Aucun changement à sauvegarder"
     fi
