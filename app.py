@@ -97,6 +97,7 @@ from routes.newsletter import newsletter_bp
 from routes.cart import cart_bp
 from routes.blog import blog_bp
 from routes.ai_tools_routes import ai_tools_bp
+from routes.stripe_routes import stripe_bp
 
 app.register_blueprint(auth_bp, url_prefix='/api/auth')
 app.register_blueprint(products_bp, url_prefix='/api/products')
@@ -107,6 +108,7 @@ app.register_blueprint(newsletter_bp, url_prefix='/api/newsletter')
 app.register_blueprint(cart_bp, url_prefix='/api/cart')
 app.register_blueprint(blog_bp, url_prefix='/api/blog')
 app.register_blueprint(ai_tools_bp)
+app.register_blueprint(stripe_bp, url_prefix='/api/stripe')
 
 if __name__ == '__main__':
     # En prod (Render) tu utilises gunicorn; ce run() est pour le dev local

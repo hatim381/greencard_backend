@@ -85,6 +85,10 @@ class Order(db.Model):
     total_co2_saved = db.Column(db.Float)
     address = db.Column(db.String(255))  # Adresse de livraison
     payment = db.Column(db.String(50))   # Moyen de paiement
+    email = db.Column(db.String(255))    # Email de contact
+    phone = db.Column(db.String(50))     # Téléphone
+    instructions = db.Column(db.Text)    # Instructions de livraison
+    payment_intent_id = db.Column(db.String(255))  # ID du paiement Stripe
 
     items = db.relationship('OrderItem', backref='order', lazy=True)
 

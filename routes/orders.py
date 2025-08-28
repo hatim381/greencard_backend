@@ -2,6 +2,11 @@ from flask import Blueprint, request, jsonify
 from models import db, Order, OrderItem, Product, User
 from datetime import datetime
 from flask_jwt_extended import jwt_required, get_jwt_identity
+import stripe
+import os
+
+# Configuration Stripe
+stripe.api_key = os.getenv('STRIPE_SECRET_KEY')
 
 orders_bp = Blueprint('orders', __name__)
 
@@ -18,17 +23,28 @@ def create_order():
         items = data.get('items')  # liste : [{product_id, quantity}, ...]
         address = data.get('address')
         payment = data.get('payment')
+        email = data.get('email')
+        phone = data.get('phone')
+        instructions = data.get('instructions')
+        payment_intent_id = data.get('payment_intent_id')  # Pour Stripe
 
         if not consumer_id or not items:
             return jsonify({'error': 'Requête invalide'}), 400
         if not address or not payment:
             return jsonify({'error': 'Adresse et paiement requis'}), 400
 
-        # Simulation du paiement CB
-        if payment == "cb":
-            # Ici tu pourrais intégrer Stripe ou autre, ou simuler
-            # Pour la démo, on simule un paiement toujours accepté
-            pass  # Si tu veux simuler un échec, tu peux lever une exception ici
+        # Vérification du paiement CB avec Stripe
+        if payment == "cb" and payment_intent_id:
+            try:
+                # Vérifier le statut du paiement Stripe
+                intent = stripe.PaymentIntent.retrieve(payment_intent_id)
+                if intent.status != 'succeeded':
+                    return jsonify({'error': f'Paiement échoué - Statut: {intent.status}'}), 400
+                print(f"DEBUG - Paiement Stripe validé: {intent.id} - Montant: {intent.amount/100}€")
+            except stripe.error.StripeError as e:
+                return jsonify({'error': f'Erreur Stripe: {str(e)}'}), 400
+        elif payment == "cb" and not payment_intent_id:
+            return jsonify({'error': 'payment_intent_id requis pour les paiements CB'}), 400
 
         total_price = 0
         total_co2 = 0
@@ -36,8 +52,16 @@ def create_order():
             consumer_id=consumer_id,
             ordered_at=datetime.utcnow(),
             address=address,
-            payment=payment
+            payment=payment,
+            email=email,
+            phone=phone,
+            instructions=instructions
         )
+        
+        # Ajouter le payment_intent_id si c'est un paiement CB
+        if payment == "cb" and payment_intent_id:
+            order.payment_intent_id = payment_intent_id
+            
         db.session.add(order)
         db.session.flush()
 

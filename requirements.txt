@@ -20,4 +20,5 @@ catboost
 dash
 dash-bootstrap-components
 gunicorn
+stripe
 
