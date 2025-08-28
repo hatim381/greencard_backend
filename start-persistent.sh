@@ -42,11 +42,11 @@ fi
 echo "💾 Sauvegarde initiale..."
 # La DB sera sauvegardée directement par git-backup.sh
 
-# Démarrer les sauvegardes Git périodiques (toutes les 5 minutes)
+# Démarrer les sauvegardes Git périodiques (toutes les 20 minutes)
 echo "⏰ Démarrage des sauvegardes Git..."
 chmod +x /opt/render/project/src/git-backup.sh
 (while true; do
-    sleep 300  # 5 minutes
+    sleep 1200  # 20 minutes
     echo "🔄 Sauvegarde automatique $(date)"
     /opt/render/project/src/git-backup.sh || echo "⚠️ Erreur sauvegarde Git"
 done) &
