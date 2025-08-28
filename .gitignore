@@ -8,3 +8,16 @@ venv
 
 # Autoriser la sauvegarde des uploads (images produits)
 !uploads/
+
+# Variables d'environnement
+.env
+.env.local
+.env.production
+**/ENV_VARS.md
+**/*_ENV.md
+
+# Clés et secrets
+**/*key*
+**/*secret*
+**/*token*
+
