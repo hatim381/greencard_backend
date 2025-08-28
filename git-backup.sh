@@ -34,46 +34,61 @@ fi
 echo "🔀 Basculement sur main..."
 git checkout main 2>/dev/null || git checkout -b main || true
 
-# Vérifier s'il y a des changements dans la DB avant de pull
+# Vérifier s'il y a des changements dans la DB et uploads avant de pull
+echo "📋 Vérification des changements DB et uploads..."
+CHANGES_DETECTED=false
+
+# Vérifier la DB
 if [ -f "$DB_PATH" ]; then
-    echo "📋 Vérification des changements DB..."
     git add db/greencart.db || true
-    
-    # S'il y a des changements, les stash temporairement
-    if ! git diff --staged --quiet 2>/dev/null; then
-        echo "💾 Mise de côté temporaire des changements DB..."
-        git stash push -m "Temp backup before pull $(date -u +%Y-%m-%d_%H:%M:%S_UTC)" || true
+    if ! git diff --staged --quiet db/greencart.db 2>/dev/null; then
+        CHANGES_DETECTED=true
     fi
+fi
+
+# Vérifier le dossier uploads
+if [ -d "/opt/render/project/src/uploads" ]; then
+    git add uploads/ || true
+    if ! git diff --staged --quiet uploads/ 2>/dev/null; then
+        CHANGES_DETECTED=true
+    fi
+fi
+
+# S'il y a des changements, les stash temporairement
+if [ "$CHANGES_DETECTED" = true ]; then
+    echo "💾 Mise de côté temporaire des changements (DB + uploads)..."
+    git stash push -m "Temp backup before pull $(date -u +%Y-%m-%d_%H:%M:%S_UTC)" || true
 fi
 
 # Pull des derniers changements
 echo "📥 Pull des derniers changements..."
 git pull origin main || echo "⚠️ Premier pull, normal"
 
-# Sauvegarder la base de données principale
-if [ -f "$DB_PATH" ]; then
-    echo "📋 Sauvegarde de la base de données principale..."
-    
-    # Récupérer les changements stashés s'il y en a
-    if git stash list | grep -q "Temp backup before pull"; then
-        echo "🔄 Récupération des changements DB..."
-        git stash pop || true
-    else
-        # Sinon, ajouter la DB normalement
-        echo "📁 Ajout de greencart.db..."
+# Sauvegarder la base de données et uploads
+echo "📋 Sauvegarde de la base de données et uploads..."
+
+# Récupérer les changements stashés s'il y en a
+if git stash list | grep -q "Temp backup before pull"; then
+    echo "🔄 Récupération des changements (DB + uploads)..."
+    git stash pop || true
+else
+    # Sinon, ajouter la DB et uploads normalement
+    echo "📁 Ajout de greencart.db et uploads/..."
+    if [ -f "$DB_PATH" ]; then
         git add db/greencart.db || true
     fi
-    
-    # Vérifier s'il y a des changements à commit
-    if ! git diff --staged --quiet 2>/dev/null; then
-        echo "💾 Commit des sauvegardes..."
-        git commit -m "Auto backup DB $(date -u +%Y-%m-%d_%H:%M:%S_UTC)" || true
-        
-        echo "🚀 Push vers GitHub..."
-        git push origin main || echo "⚠️ Erreur push"
-    else
-        echo "✅ Aucun changement à sauvegarder"
+    if [ -d "/opt/render/project/src/uploads" ]; then
+        git add uploads/ || true
     fi
+fi
+
+# Vérifier s'il y a des changements à commit
+if ! git diff --staged --quiet 2>/dev/null; then
+    echo "💾 Commit des sauvegardes (DB + uploads)..."
+    git commit -m "Auto backup DB + uploads $(date -u +%Y-%m-%d_%H:%M:%S_UTC)" || true
+    
+    echo "🚀 Push vers GitHub..."
+    git push origin main || echo "⚠️ Erreur push"
 else
-    echo "❌ Base de données non trouvée : $DB_PATH"
+    echo "✅ Aucun changement à sauvegarder"
 fi
