@@ -25,7 +25,18 @@ git config --global user.email "backup@greencart.app"
 if ! git remote get-url origin >/dev/null 2>&1; then
     echo "🔗 Configuration du remote GitHub..."
     git remote add origin https://${GITHUB_TOKEN}@github.com/hatim381/greencard_backend.git || true
+else
+    # Mettre à jour l'URL si elle existe déjà
+    git remote set-url origin https://${GITHUB_TOKEN}@github.com/hatim381/greencard_backend.git || true
 fi
+
+# S'assurer qu'on est sur la branche main
+echo "🔀 Basculement sur main..."
+git checkout main 2>/dev/null || git checkout -b main || true
+
+# Pull des derniers changements avant de pousser
+echo "📥 Pull des derniers changements..."
+git pull origin main --rebase || echo "⚠️ Premier push, normal"
 
 # Sauvegarder la base de données principale
 if [ -f "$DB_PATH" ]; then
@@ -41,7 +52,8 @@ if [ -f "$DB_PATH" ]; then
         git commit -m "Auto backup DB $(date -u +%Y-%m-%d_%H:%M:%S_UTC)" || true
         
         echo "🚀 Push vers GitHub..."
-        git push origin main || echo "⚠️ Erreur push (probablement normal en premier démarrage)"
+        git push origin main --force-with-lease || echo "⚠️ Erreur push - retry simple..."
+        git push origin main || echo "⚠️ Erreur push finale"
     else
         echo "✅ Aucun changement à sauvegarder"
     fi
