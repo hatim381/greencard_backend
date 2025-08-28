@@ -179,3 +179,28 @@ def update_product(product_id):
         return jsonify({'error': f'Valeur invalide: {str(ve)}'}), 400
     except Exception as e:
         return jsonify({'error': str(e)}), 400
+
+# ===========================
+# DELETE /<id> - Supprimer produit
+# ===========================
+@products_bp.route('/<int:product_id>', methods=['DELETE'])
+def delete_product(product_id):
+    try:
+        product = Product.query.get_or_404(product_id)
+        
+        # Optionnel : supprimer le fichier image du disque
+        if product.image_url and product.image_url.startswith('/uploads/'):
+            try:
+                image_path = os.path.join(UPLOAD_FOLDER, os.path.basename(product.image_url))
+                if os.path.exists(image_path):
+                    os.remove(image_path)
+            except Exception:
+                pass  # On continue même si la suppression de l'image échoue
+        
+        db.session.delete(product)
+        db.session.commit()
+        
+        return jsonify({'message': 'Produit supprimé avec succès'}), 200
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 400
