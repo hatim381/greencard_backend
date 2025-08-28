@@ -71,15 +71,15 @@ echo "📋 Sauvegarde de la base de données et uploads..."
 if git stash list | grep -q "Temp backup before pull"; then
     echo "🔄 Récupération des changements (DB + uploads)..."
     git stash pop || true
-else
-    # Sinon, ajouter la DB et uploads normalement
-    echo "📁 Ajout de greencart.db et uploads/..."
-    if [ -f "$DB_PATH" ]; then
-        git add db/greencart.db || true
-    fi
-    if [ -d "/opt/render/project/src/uploads" ]; then
-        git add uploads/ || true
-    fi
+fi
+
+# Toujours ajouter la DB et uploads après le pop (pour être sûr)
+echo "📁 Ajout final de greencart.db et uploads/..."
+if [ -f "$DB_PATH" ]; then
+    git add db/greencart.db || true
+fi
+if [ -d "/opt/render/project/src/uploads" ]; then
+    git add uploads/ || true
 fi
 
 # Vérifier s'il y a des changements à commit
