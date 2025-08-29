@@ -13,22 +13,34 @@ def create_payment_intent():
         data = request.get_json()
         amount = data.get('amount')  # en centimes (ex: 1550 pour 15.50€)
         currency = data.get('currency', 'eur')
+        payment_method_types = data.get('payment_method_types')
+        preferred_payment_method = data.get('preferred_payment_method')
         
         if not amount:
             return jsonify({'error': 'Montant requis'}), 400
             
-        # Créer un PaymentIntent Stripe avec PayPal activé
-        intent = stripe.PaymentIntent.create(
-            amount=int(amount),
-            currency=currency,
-            automatic_payment_methods={
-                'enabled': True,
-            },
-            metadata={
+        # Configuration pour PaymentIntent
+        payment_intent_config = {
+            'amount': int(amount),
+            'currency': currency,
+            'metadata': {
                 'integration_check': 'accept_a_payment',
                 'platform': 'greencart'
             }
-        )
+        }
+        
+        # Si PayPal est demandé spécifiquement
+        if payment_method_types and 'paypal' in payment_method_types:
+            payment_intent_config['payment_method_types'] = ['paypal']
+            payment_intent_config['metadata']['preferred_method'] = 'paypal'
+        else:
+            # Utiliser automatic_payment_methods pour tous les autres cas
+            payment_intent_config['automatic_payment_methods'] = {
+                'enabled': True,
+            }
+        
+        # Créer un PaymentIntent Stripe
+        intent = stripe.PaymentIntent.create(**payment_intent_config)
         
         return jsonify({
             'client_secret': intent.client_secret,
