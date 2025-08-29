@@ -33,18 +33,18 @@ def create_order():
         if not address or not payment:
             return jsonify({'error': 'Adresse et paiement requis'}), 400
 
-        # Vérification du paiement CB avec Stripe
-        if payment == "cb" and payment_intent_id:
+        # Vérification du paiement CB et PayPal avec Stripe
+        if (payment == "cb" or payment == "paypal") and payment_intent_id:
             try:
                 # Vérifier le statut du paiement Stripe
                 intent = stripe.PaymentIntent.retrieve(payment_intent_id)
                 if intent.status != 'succeeded':
                     return jsonify({'error': f'Paiement échoué - Statut: {intent.status}'}), 400
-                print(f"DEBUG - Paiement Stripe validé: {intent.id} - Montant: {intent.amount/100}€")
+                print(f"DEBUG - Paiement {payment.upper()} validé: {intent.id} - Montant: {intent.amount/100}€")
             except stripe.error.StripeError as e:
                 return jsonify({'error': f'Erreur Stripe: {str(e)}'}), 400
-        elif payment == "cb" and not payment_intent_id:
-            return jsonify({'error': 'payment_intent_id requis pour les paiements CB'}), 400
+        elif (payment == "cb" or payment == "paypal") and not payment_intent_id:
+            return jsonify({'error': 'payment_intent_id requis pour les paiements CB et PayPal'}), 400
 
         total_price = 0
         total_co2 = 0
@@ -58,8 +58,8 @@ def create_order():
             instructions=instructions
         )
         
-        # Ajouter le payment_intent_id si c'est un paiement CB
-        if payment == "cb" and payment_intent_id:
+        # Ajouter le payment_intent_id si c'est un paiement CB ou PayPal
+        if (payment == "cb" or payment == "paypal") and payment_intent_id:
             order.payment_intent_id = payment_intent_id
             
         db.session.add(order)

@@ -17,10 +17,13 @@ def create_payment_intent():
         if not amount:
             return jsonify({'error': 'Montant requis'}), 400
             
-        # Créer un PaymentIntent Stripe
+        # Créer un PaymentIntent Stripe avec PayPal activé
         intent = stripe.PaymentIntent.create(
             amount=int(amount),
             currency=currency,
+            automatic_payment_methods={
+                'enabled': True,
+            },
             metadata={
                 'integration_check': 'accept_a_payment',
                 'platform': 'greencart'
