@@ -18,6 +18,8 @@ def allowed_file(filename: str) -> bool:
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 def serialize_product(p: Product) -> dict:
+    if p is None:
+        return None
     return {
         'id': p.id,
         'name': p.name,
@@ -42,7 +44,11 @@ def serialize_product(p: Product) -> dict:
 @products_bp.route('', methods=['GET'])  # Accepter sans slash
 def get_products():
     products = Product.query.all()
-    return jsonify([serialize_product(p) for p in products]), 200
+    # Filtrer les objets None et sérialiser
+    serialized_products = [serialize_product(p) for p in products if p is not None]
+    # Filtrer les résultats None de la sérialisation
+    serialized_products = [p for p in serialized_products if p is not None]
+    return jsonify(serialized_products), 200
 
 # ===========================
 # POST / - Ajouter un produit
