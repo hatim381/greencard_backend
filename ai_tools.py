@@ -24,9 +24,3 @@ def predict_good_sale(input_dict):
 def meilleur_produit(categorie, mois):
     result = best_products_unique.query("categorie == @categorie and mois == @mois")
     return result['produit'].values[0] if not result.empty else None
-
-## Nettoyage : suppression des doublons et de l'ancien code inutile
-
-def meilleur_produit(categorie, mois):
-    result = best_products_unique.query("categorie == @categorie and mois == @mois")
-    return result['produit'].values[0] if not result.empty else None
